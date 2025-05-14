@@ -1,23 +1,14 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8" />
-  <title>2D Minecraft Spiel</title>
+  <meta charset="UTF-8">
+  <title>2D Minecraft</title>
   <style>
-    canvas {
-      border: 2px solid #000;
-      background: #87CEEB; /* Himmelblau */
-      display: block;
-      margin: 0 auto;
-    }
-    body {
-      text-align: center;
-      font-family: sans-serif;
-    }
+    body { margin: 0; background: #222; }
+    canvas { display: block; margin: 0 auto; background: #87CEEB; }
   </style>
 </head>
 <body>
-  <h1>2D Minecraft Webspiel</h1>
   <canvas id="game" width="800" height="600"></canvas>
 
   <script>
@@ -35,18 +26,20 @@
     const player = {
       x: 5,
       y: 5,
+      vx: 0,
+      vy: 0,
+      width: 1,
+      height: 1,
       color: "blue"
     };
 
-    function drawWorld() {
-      for (let y = 0; y < rows; y++) {
-        for (let x = 0; x < cols; x++) {
-          if (world[y][x]) {
-            ctx.fillStyle = world[y][x] === "dirt" ? "#8B4513" : "#ccc";
-            ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
-          }
-        }
-      }
+    function drawTile(x, y, type) {
+      ctx.fillStyle = {
+        dirt: "#8B4513",
+        stone: "#777",
+      }[type] || "#000";
+
+      ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
     }
 
     function drawPlayer() {
@@ -56,19 +49,33 @@
 
     function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      drawWorld();
+      for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+          if (world[y][x]) drawTile(x, y, world[y][x]);
+        }
+      }
       drawPlayer();
     }
 
-    function isInBounds(x, y) {
-      return x >= 0 && y >= 0 && x < cols && y < rows;
+    function isSolid(x, y) {
+      return world[y]?.[x] != null;
+    }
+
+    function updatePhysics() {
+      if (!isSolid(player.x, player.y + 1)) {
+        player.vy += 0.1;
+      } else {
+        player.vy = 0;
+      }
+
+      player.y += player.vy;
+      player.y = Math.min(rows - 1, player.y);
     }
 
     document.addEventListener("keydown", e => {
-      if (e.key === "w" && isInBounds(player.x, player.y - 1)) player.y--;
-      if (e.key === "s" && isInBounds(player.x, player.y + 1)) player.y++;
-      if (e.key === "a" && isInBounds(player.x - 1, player.y)) player.x--;
-      if (e.key === "d" && isInBounds(player.x + 1, player.y)) player.x++;
+      if (e.key === "a") player.x = Math.max(0, player.x - 1);
+      if (e.key === "d") player.x = Math.min(cols - 1, player.x + 1);
+      if (e.key === "w" && isSolid(player.x, player.y + 1)) player.vy = -0.5;
       draw();
     });
 
@@ -77,19 +84,23 @@
       const x = Math.floor((e.clientX - rect.left) / tileSize);
       const y = Math.floor((e.clientY - rect.top) / tileSize);
 
-      if (!isInBounds(x, y)) return;
-
       if (e.button === 0) {
-        world[y][x] = "dirt"; // Block setzen
+        world[y][x] = "dirt";
       } else if (e.button === 2) {
-        world[y][x] = null; // Block entfernen
+        world[y][x] = null;
       }
       draw();
     });
 
     canvas.oncontextmenu = () => false;
 
-    draw();
+    function gameLoop() {
+      updatePhysics();
+      draw();
+      requestAnimationFrame(gameLoop);
+    }
+
+    gameLoop();
   </script>
 </body>
 </html>
