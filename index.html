@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>2D Minecraft Spiel</title>
+  <style>
+    canvas {
+      border: 2px solid #000;
+      background: #87CEEB; /* Himmelblau */
+      display: block;
+      margin: 0 auto;
+    }
+    body {
+      text-align: center;
+      font-family: sans-serif;
+    }
+  </style>
+</head>
+<body>
+  <h1>2D Minecraft Webspiel</h1>
+  <canvas id="game" width="800" height="600"></canvas>
+
+  <script>
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+
+    const tileSize = 40;
+    const cols = canvas.width / tileSize;
+    const rows = canvas.height / tileSize;
+
+    const world = Array.from({ length: rows }, (_, y) =>
+      Array.from({ length: cols }, (_, x) => (y > 10 ? "dirt" : null))
+    );
+
+    const player = {
+      x: 5,
+      y: 5,
+      color: "blue"
+    };
+
+    function drawWorld() {
+      for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+          if (world[y][x]) {
+            ctx.fillStyle = world[y][x] === "dirt" ? "#8B4513" : "#ccc";
+            ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+          }
+        }
+      }
+    }
+
+    function drawPlayer() {
+      ctx.fillStyle = player.color;
+      ctx.fillRect(player.x * tileSize, player.y * tileSize, tileSize, tileSize);
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawWorld();
+      drawPlayer();
+    }
+
+    function isInBounds(x, y) {
+      return x >= 0 && y >= 0 && x < cols && y < rows;
+    }
+
+    document.addEventListener("keydown", e => {
+      if (e.key === "w" && isInBounds(player.x, player.y - 1)) player.y--;
+      if (e.key === "s" && isInBounds(player.x, player.y + 1)) player.y++;
+      if (e.key === "a" && isInBounds(player.x - 1, player.y)) player.x--;
+      if (e.key === "d" && isInBounds(player.x + 1, player.y)) player.x++;
+      draw();
+    });
+
+    canvas.addEventListener("mousedown", e => {
+      const rect = canvas.getBoundingClientRect();
+      const x = Math.floor((e.clientX - rect.left) / tileSize);
+      const y = Math.floor((e.clientY - rect.top) / tileSize);
+
+      if (!isInBounds(x, y)) return;
+
+      if (e.button === 0) {
+        world[y][x] = "dirt"; // Block setzen
+      } else if (e.button === 2) {
+        world[y][x] = null; // Block entfernen
+      }
+      draw();
+    });
+
+    canvas.oncontextmenu = () => false;
+
+    draw();
+  </script>
+</body>
+</html>
