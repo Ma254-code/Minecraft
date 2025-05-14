@@ -1,15 +1,44 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <title>2D Minecraft</title>
+  <meta charset="UTF-8" />
+  <title>Minecraft</title>
   <style>
-    body { margin: 0; background: #222; }
-    canvas { display: block; margin: 0 auto; background: #87CEEB; }
+    body {
+      background: #222;
+      color: white;
+      font-family: sans-serif;
+      text-align: center;
+      margin: 0;
+    }
+
+    canvas {
+      display: block;
+      margin: 0 auto;
+      background: #87CEEB;
+      border: 2px solid #444;
+    }
+
+    #inventory, #crafting {
+      margin: 10px auto;
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .item {
+      width: 40px;
+      height: 40px;
+      border: 1px solid white;
+      background-size: cover;
+    }
   </style>
 </head>
 <body>
+  <h1>2D Minecraft</h1>
   <canvas id="game" width="800" height="600"></canvas>
+  <div id="inventory"></div>
+  <div id="crafting"></div>
 
   <script>
     const canvas = document.getElementById("game");
@@ -19,8 +48,13 @@
     const cols = canvas.width / tileSize;
     const rows = canvas.height / tileSize;
 
+    // Welt mit einfachen Farben: Erde, Stein, Gras, Holz
     const world = Array.from({ length: rows }, (_, y) =>
-      Array.from({ length: cols }, (_, x) => (y > 10 ? "dirt" : null))
+      Array.from({ length: cols }, (_, x) => {
+        if (y === rows - 1) return "grass"; // Gras unten
+        if (y > rows - 5) return "dirt"; // Erde als Boden
+        return "stone"; // Stein oben
+      })
     );
 
     const player = {
@@ -33,17 +67,20 @@
       color: "blue"
     };
 
-    function drawTile(x, y, type) {
-      ctx.fillStyle = {
-        dirt: "#8B4513",
-        stone: "#777",
-      }[type] || "#000";
+    const blockColors = {
+      dirt: "#7C4B1F", // Braun
+      stone: "#9E9E9E", // Grau
+      grass: "#4CAF50", // Grün
+      wood: "#8D6E63", // Holz
+    };
 
+    function drawTile(x, y, type) {
+      ctx.fillStyle = blockColors[type] || "#FFFFFF"; // Fallback auf Weiß
       ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
     }
 
     function drawPlayer() {
-      ctx.fillStyle = player.color;
+      ctx.fillStyle = "blue";  // Spieler ist blau
       ctx.fillRect(player.x * tileSize, player.y * tileSize, tileSize, tileSize);
     }
 
@@ -58,18 +95,18 @@
     }
 
     function isSolid(x, y) {
-      return world[y]?.[x] != null;
+      return world[y]?.[x] != null && world[y][x] !== "grass";
     }
 
     function updatePhysics() {
       if (!isSolid(player.x, player.y + 1)) {
-        player.vy += 0.1;
+        player.vy += 0.1; // Schwerkraft
       } else {
         player.vy = 0;
       }
 
       player.y += player.vy;
-      player.y = Math.min(rows - 1, player.y);
+      player.y = Math.min(rows - 1, player.y);  // Spieler soll nicht durch den Boden fallen
     }
 
     document.addEventListener("keydown", e => {
@@ -85,9 +122,9 @@
       const y = Math.floor((e.clientY - rect.top) / tileSize);
 
       if (e.button === 0) {
-        world[y][x] = "dirt";
+        world[y][x] = "dirt"; // Setzen von Erde
       } else if (e.button === 2) {
-        world[y][x] = null;
+        world[y][x] = null; // Entfernen von Block
       }
       draw();
     });
